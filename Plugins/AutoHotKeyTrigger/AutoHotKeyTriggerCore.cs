@@ -59,6 +59,14 @@ namespace AutoHotKeyTrigger
                 "Again, all profiles/rules created to use a specified flask(s) should have at a minimum the FLASK_EFFECT and an appropriate number of FLASK_CHARGES defined as part of the use condition of a given profile rule. Failing to to include these two conditions as part of a rule will likely result in Auto Hotkey Trigger spamming the flask(s), resulting in a possible kick or ban from the game servers because of sending to many actions to the server. You have been warrned, use common sense when creating profiles/rulse with this tool.",
                 "Flask-Regeln brauchen mindestens FLASK_EFFECT und FLASK_CHARGES. Ohne diese Bedingungen kann das Plugin Flasks spammen und zu Kick/Bann fuehren."));
             ImGui.PopTextWrapPos();
+            var executionBlockReason = this.GetExecutionBlockReason();
+            if (!string.IsNullOrEmpty(executionBlockReason))
+            {
+                ImGui.TextColored(this.impTextColor, L(
+                    $"Rules inactive: {executionBlockReason}",
+                    $"Regeln inaktiv: {executionBlockReason}"));
+            }
+
             if (ImGui.CollapsingHeader(L("Common Config", "Allgemeine Einstellungen")))
             {
                 ImGui.Checkbox(L("Debug Mode", "Debug-Modus"), ref this.Settings.DebugMode);
@@ -110,8 +118,8 @@ namespace AutoHotKeyTrigger
                 {
                     var isOpened = ImGui.TreeNode($"{key} (?)");
                     ImGuiHelper.ToolTip(L(
-                        "Rules (tabs) can be moved via drag and drop. They can be cloned by right click.",
-                        "Regeln (Tabs) per Drag & Drop verschieben. Rechtsklick zum Klonen."));
+                        "Rules (tabs) can be moved via drag and drop. They can be cloned by right click. Leftmost tabs run first and get priority when the global key throttle is busy.",
+                        "Regeln (Tabs) per Drag & Drop verschieben. Rechtsklick zum Klonen. Die linkeste Regel wird zuerst ausgewertet und hat Vorrang bei der globalen Tasten-Sperre."));
                     if (isOpened)
                     {
                         ImGui.SameLine();
@@ -245,12 +253,6 @@ namespace AutoHotKeyTrigger
                 return;
             }
 
-            if (Core.States.InGameStateObject.GameUi.ChatParent.IsChatActive)
-            {
-                this.debugMessage = "Chat window is active, so can not drink flasks or trigger skills.";
-                return;
-            }
-
             foreach (var rule in this.Settings.Profiles[this.Settings.CurrentProfile].Rules)
             {
                 rule.Execute(this.DebugLog);
@@ -309,68 +311,75 @@ namespace AutoHotKeyTrigger
 
         private bool ShouldExecutePlugin()
         {
+            this.debugMessage = this.GetExecutionBlockReason() ?? string.Empty;
+            return string.IsNullOrEmpty(this.debugMessage);
+        }
+
+        private string? GetExecutionBlockReason()
+        {
             var cgs = Core.States.GameCurrentState;
             if (cgs != GameStateTypes.InGameState)
             {
-                this.debugMessage = $"Current game state isn't InGameState, it's {cgs}.";
-                return false;
+                return L(
+                    $"Current game state isn't InGameState, it's {cgs}.",
+                    $"Spielzustand ist nicht InGameState, sondern {cgs}.");
             }
 
             if (!Core.Process.Foreground)
             {
-                this.debugMessage = "Game is minimized.";
-                return false;
+                return L(
+                    "Game window is not focused (click the game or close this settings window to test).",
+                    "Spielfenster hat keinen Fokus (Spiel anklicken oder Einstellungen schliessen zum Testen).");
             }
 
             var areaDetails = Core.States.InGameStateObject.CurrentWorldInstance.AreaDetails;
             if (areaDetails.IsTown)
             {
-                this.debugMessage = "Player is in town.";
-                return false;
+                return L("Player is in town.", "Spieler ist in der Stadt.");
             }
 
             if (!this.Settings.ShouldRunInHideout && areaDetails.IsHideout)
             {
-                this.debugMessage = "Player is in hideout & hideout execution is turned off.";
-                return false;
+                return L(
+                    "Player is in hideout and hideout execution is turned off.",
+                    "Spieler ist im Hideout und Ausfuehrung im Hideout ist deaktiviert.");
             }
 
             if (Core.States.InGameStateObject.CurrentAreaInstance.Player.TryGetComponent<Life>(out var lifeComp))
             {
                 if (lifeComp.Health.Current <= 0)
                 {
-                    this.debugMessage = "Player is dead.";
-                    return false;
+                    return L("Player is dead.", "Spieler ist tot.");
                 }
             }
             else
             {
-                this.debugMessage = "Can not find player Life component.";
-                return false;
+                return L("Can not find player Life component.", "Life-Komponente des Spielers nicht gefunden.");
             }
 
             if (Core.States.InGameStateObject.CurrentAreaInstance.Player.TryGetComponent<Buffs>(out var buffComp))
             {
                 if (buffComp.StatusEffects.ContainsKey("grace_period"))
                 {
-                    this.debugMessage = "Player has Grace Period.";
-                    return false;
+                    return L("Player has Grace Period.", "Spieler hat Grace Period.");
                 }
             }
             else
             {
-                this.debugMessage = "Can not find player PlayerBuffs component.";
-                return false;
+                return L("Can not find player Buffs component.", "Buffs-Komponente des Spielers nicht gefunden.");
             }
 
             if (!Core.States.InGameStateObject.CurrentAreaInstance.Player.TryGetComponent<Actor>(out var _))
             {
-                this.debugMessage = "Can not find player Actor component.";
-                return false;
+                return L("Can not find player Actor component.", "Actor-Komponente des Spielers nicht gefunden.");
             }
 
-            this.debugMessage = string.Empty;
-            return true;
+            if (Core.States.InGameStateObject.GameUi.ChatParent.IsChatActive)
+            {
+                return L("Chat window is active.", "Chatfenster ist aktiv.");
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -392,6 +401,10 @@ namespace AutoHotKeyTrigger
 
         private void AutoQuitWarningUi()
         {
+            if (Core.States.GameCurrentState != GameStateTypes.InGameState)
+            {
+                return;
+            }
 
             if (!this.stopShowingAutoQuitWarning &&
                 (Core.States.InGameStateObject.CurrentWorldInstance.AreaDetails.IsTown ||

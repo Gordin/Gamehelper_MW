@@ -44,6 +44,8 @@ namespace GameHelper.Plugin
 
             ["HealthBars"] = new("GameHelper2 upstream", "KronosDesign / community"),
 
+            ["SimpleBars"] = new("Reynbow", "Reynbow/simplebars fork"),
+
             ["PreloadAlert"] = new("GameHelper2 upstream", "ExileAPI PreloadAlert concept"),
 
             ["AuraTracker"] = new("Skrip", "derekShaheen/AuraTracker"),

@@ -206,6 +206,16 @@ namespace GameHelper.Settings
         public VK DisableAllRenderingKey = VK.F9;
 
         /// <summary>
+        ///     Gets or sets a value indicating whether the hideout chat-command hotkey is active.
+        /// </summary>
+        public bool HideoutAutomationEnabled = false;
+
+        /// <summary>
+        ///     Gets or sets the hotkey that types <c>/hideout</c> into the game chat.
+        /// </summary>
+        public VK HideoutAutomationKey = VK.F8;
+
+        /// <summary>
         ///     Gets or sets the important NPC Paths.
         /// </summary>
         public List<string> SpecialNPCPaths = new();

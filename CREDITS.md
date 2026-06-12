@@ -38,6 +38,7 @@ Open **Plugins** in the GameHelper menu (top bar). The plugin table shows each p
 | AutoPot | MordWraith | Written for this fork |
 | AutoHotKeyTrigger | GameHelper2 upstream | Bundled with GameHelper2 |
 | HealthBars | GameHelper2 upstream | Bundled with GameHelper2 |
+| SimpleBars | [Reynbow](https://github.com/Reynbow/simplebars) | Simpler HealthBars fork (gradient bars, circle-dot mode) |
 | PreloadAlert | GameHelper2 upstream | Concept from [TehCheat/PreloadAlert](https://github.com/TehCheat/PreloadAlert) |
 | AuraTracker | Skrip / [derekShaheen](https://github.com/derekShaheen/AuraTracker) | Nearby enemy list with HP/ES, buffs, DPS |
 | MapKillCounter | MordWraith | Per-map monster kill counts |

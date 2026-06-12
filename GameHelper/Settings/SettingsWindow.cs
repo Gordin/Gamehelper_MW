@@ -794,6 +794,10 @@ namespace GameHelper.Settings
                 OverlayLocalization.L("Keys & input", "Tasten & Eingabe"),
                 ImGuiTreeNodeFlags.DefaultOpen))
             {
+                var fieldWidth = ImGui.GetContentRegionAvail().X;
+
+                ImGui.Text(OverlayLocalization.L("Timeout", "Timeout"));
+                ImGui.SetNextItemWidth(fieldWidth);
                 DragIntTooltip(
                     "##KeyPressTimeout",
                     ref Core.GHSettings.KeyPressTimeout,
@@ -805,15 +809,33 @@ namespace GameHelper.Settings
                     "Tasten-Timeout (ms). Wenn GameHelper eine Taste sendet, braucht der Server Zeit (ca. Latenz x 3). " +
                     "Wert auf Latenz x 3 setzen (z. B. 90 bei 30 ms). Nicht unter 60.");
 
+                ImGui.Text(OverlayLocalization.L("Menu", "Menue"));
+                ImGui.SetNextItemWidth(fieldWidth);
                 ImGuiHelper.NonContinuousEnumComboBox("##MainMenuHotKey", ref Core.GHSettings.MainMenuHotKey);
                 ImGuiHelper.ToolTip(OverlayLocalization.L(
                     "Hide/show settings menu — press this key to show or hide GameHelper (default: F11).",
                     "Einstellungsmenue ein/aus — mit dieser Taste GameHelper ein- oder ausblenden (Standard: F11)."));
 
+                ImGui.Text(OverlayLocalization.L("Overlay", "Overlay"));
+                ImGui.SetNextItemWidth(fieldWidth);
                 ImGuiHelper.NonContinuousEnumComboBox("##DisableRenderingKey", ref Core.GHSettings.DisableAllRenderingKey);
                 ImGuiHelper.ToolTip(OverlayLocalization.L(
                     "Toggle overlay rendering — enable or disable all overlay drawing (default: F9).",
                     "Overlay-Darstellung ein/aus — gesamtes Overlay ein- oder ausschalten (Standard: F9)."));
+
+                ImGui.Spacing();
+                ImGui.Text(OverlayLocalization.L("Hideout", "Hideout"));
+                ImGui.Checkbox("##HideoutAutomationEnabled", ref Core.GHSettings.HideoutAutomationEnabled);
+                ImGui.SameLine();
+                ImGui.Text(OverlayLocalization.L("Auto /hideout", "Auto /hideout"));
+                ImGui.SameLine();
+                ImGui.SetNextItemWidth(Math.Max(120f, fieldWidth - ImGui.CalcTextSize("Auto /hideout").X - 40f));
+                ImGuiHelper.NonContinuousEnumComboBox("##HideoutAutomationKey", ref Core.GHSettings.HideoutAutomationKey);
+                ImGuiHelper.ToolTip(OverlayLocalization.L(
+                    "When enabled, the hotkey opens chat and sends /hideout (paste if possible, otherwise types it). " +
+                    "Works only while the game window is focused and chat is closed.",
+                    "Wenn aktiv, oeffnet die Taste den Chat und sendet /hideout (einfuegen wenn moeglich, sonst tippen). " +
+                    "Funktioniert nur bei fokussiertem Spielfenster und geschlossenem Chat."));
             }
         }
 

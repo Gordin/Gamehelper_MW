@@ -26,9 +26,11 @@ namespace AutoHotKeyTrigger.ProfileManager
     {
         private int conditionToModify = -1;
         private int conditionIndexToSwap = -1;
-        private static bool expand = false;
+        private bool expand;
         private ConditionType newConditionType = ConditionType.AILMENT;
         private readonly Stopwatch cooldownStopwatch = Stopwatch.StartNew();
+
+        private bool awaitingKeySend;
 
         [JsonProperty("Conditions", NullValueHandling = NullValueHandling.Ignore)]
         private readonly List<DynamicCondition> conditions = new();
@@ -118,6 +120,13 @@ namespace AutoHotKeyTrigger.ProfileManager
                 this.Key = tmpKey;
             }
 
+            if (this.Enabled && this.conditions.Count == 0)
+            {
+                ImGui.TextColored(new Vector4(1f, 0.35f, 0.2f, 1f), L(
+                    "No conditions — this rule will never run. Add at least one condition.",
+                    "Keine Bedingungen — diese Regel laeuft nie. Mindestens eine Bedingung hinzufuegen."));
+            }
+
             this.DrawCooldownWidget();
             this.DrawAddNewCondition();
             this.DrawExistingConditions();
@@ -129,13 +138,31 @@ namespace AutoHotKeyTrigger.ProfileManager
         /// <param name="logger"></param>
         public void Execute(Action<string> logger)
         {
-            if (this.Enabled && this.Evaluate())
+            if (!this.Enabled)
             {
-                if (MiscHelper.KeyUp(this.Key, $"AHK/{this.Name}"))
-                {
-                    logger($"{this.Key} is pressed.");
-                    this.cooldownStopwatch.Restart();
-                }
+                return;
+            }
+
+            if (!this.AreConditionsMet())
+            {
+                this.awaitingKeySend = false;
+                return;
+            }
+
+            if (!this.awaitingKeySend && !this.IsCooldownReady())
+            {
+                return;
+            }
+
+            if (MiscHelper.KeyUp(this.Key, $"AHK/{this.Name}"))
+            {
+                logger($"{this.Key} is pressed.");
+                this.cooldownStopwatch.Restart();
+                this.awaitingKeySend = false;
+            }
+            else
+            {
+                this.awaitingKeySend = true;
             }
         }
 
@@ -202,22 +229,11 @@ namespace AutoHotKeyTrigger.ProfileManager
             (this.conditions[i], this.conditions[j]) = (this.conditions[j], this.conditions[i]);
         }
 
-        /// <summary>
-        ///     Checks the specified conditions, shortcircuiting on the first unsatisfied one
-        /// </summary>
-        /// <returns>true if all the rules conditions are true otherwise false.</returns>
-        private bool Evaluate()
-        {
-            if (this.cooldownStopwatch.Elapsed.TotalSeconds > this.delayBetweenRuns)
-            {
-                if (this.conditions.TrueForAll(x => x.Evaluate()))
-                {
-                    return true;
-                }
-            }
+        private bool AreConditionsMet() =>
+            this.conditions.Count > 0 && this.conditions.TrueForAll(x => x.Evaluate());
 
-            return false;
-        }
+        private bool IsCooldownReady() =>
+            this.cooldownStopwatch.Elapsed.TotalSeconds >= this.delayBetweenRuns;
 
         private void DrawCooldownWidget()
         {
@@ -230,9 +246,11 @@ namespace AutoHotKeyTrigger.ProfileManager
                 ImGui.ProgressBar(
                     (float)cooldownTimeFraction,
                     Vector2.Zero,
-                    cooldownTimeFraction < 1f
-                        ? $"{L("Cooling", "Abklingen")} {(cooldownTimeFraction * 100f):0}%"
-                        : L("Ready", "Bereit"));
+                    this.awaitingKeySend
+                        ? L("Sending...", "Senden...")
+                        : cooldownTimeFraction < 1f
+                            ? $"{L("Cooling", "Abklingen")} {(cooldownTimeFraction * 100f):0}%"
+                            : L("Ready", "Bereit"));
                 ImGui.PopStyleColor();
             }
         }

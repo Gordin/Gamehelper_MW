@@ -63,11 +63,7 @@ namespace PlayerBuffBar
 
         public override void SaveSettings()
         {
-            if (this.watchlistEditorDirty)
-            {
-                this.ApplyWatchlistBuffer();
-                this.watchlistEditorDirty = false;
-            }
+            this.ApplyWatchlistBufferIfNeeded();
 
             var dir = Path.GetDirectoryName(this.SettingsPath);
             if (!string.IsNullOrEmpty(dir))
@@ -103,6 +99,10 @@ namespace PlayerBuffBar
             ImGui.Checkbox(L("Show charges (P/F/E)", "Charges anzeigen (P/F/E)"), ref this.Settings.ShowCharges);
             ImGui.Checkbox(L("Show rage", "Rage anzeigen"), ref this.Settings.ShowRage);
             ImGui.Checkbox(L("Hide empty charges / rage", "Leere Charges / Rage ausblenden"), ref this.Settings.HideEmptyResources);
+            ImGui.Checkbox(L("Count badge background", "Zahlen-Hintergrund"), ref this.Settings.ShowResourceCountBackground);
+            ImGuiHelper.ToolTip(OverlayLocalization.L(
+                "When off, charge/rage counts and buff stack numbers are drawn as text only (no black bar on the icon).",
+                "Wenn aus, werden Charge/Rage-Zahlen und Buff-Stack-Zahlen nur als Text gezeichnet (kein schwarzer Balken auf dem Icon)."));
             ImGui.Checkbox(L("Anchor resource bar to health bar", "Ressourcen-Leiste an Lebensbalken"), ref this.Settings.ResourceAnchorToHealthBar);
             if (!this.Settings.ResourceAnchorToHealthBar)
             {
@@ -346,7 +346,43 @@ namespace PlayerBuffBar
                 migrated = true;
             }
 
+            if (this.Settings.SettingsVersion < 5)
+            {
+                if (this.Settings.Watchlist.Count == 0)
+                {
+                    this.Settings.Watchlist = PlayerBuffBarSettings.CreateDefaultWatchlist().ToList();
+                }
+                else
+                {
+                    var defaults = PlayerBuffBarSettings.CreateDefaultWatchlist();
+                    var isExactDefaultWatchlist = this.Settings.Watchlist.Count == defaults.Count &&
+                        PlayerBuffBarSettings.IsDefaultWatchlistPrefix(this.Settings.Watchlist);
+                    if (!isExactDefaultWatchlist)
+                    {
+                        this.Settings.WatchlistUserConfigured = true;
+                    }
+                }
+
+                this.Settings.SettingsVersion = 5;
+                migrated = true;
+            }
+
+            this.EnsureWatchlistDefaults();
+
             return migrated;
+        }
+
+        private void EnsureWatchlistDefaults()
+        {
+            if (this.Settings.WatchlistUserConfigured)
+            {
+                return;
+            }
+
+            if (this.Settings.Watchlist.Count == 0)
+            {
+                this.Settings.Watchlist = PlayerBuffBarSettings.CreateDefaultWatchlist().ToList();
+            }
         }
 
         private Vector2? ResolveHealthBarAnchor(Render render, WorldData world)
@@ -639,13 +675,26 @@ namespace PlayerBuffBar
             var countLabel = Math.Max(0, entry.ChargeCount).ToString();
             var countSize = ImGui.CalcTextSize(countLabel);
             var textColor = entry.WatchId == "rage" ? this.Settings.RageTextColor : this.Settings.ChargeTextColor;
-            var badgeHeight = MathF.Max(countSize.Y + 2f, 12f);
-            var badgeMin = new Vector2(rectMin.X, rectMax.Y - badgeHeight);
-            draw.AddRectFilled(badgeMin, rectMax, ImGuiHelper.Color(new Vector4(0f, 0f, 0f, 0.88f * alpha)), 2f);
-            draw.AddText(
-                new Vector2(
+            var textPos = new Vector2(
+                rectMin.X + (size - countSize.X) * 0.5f,
+                rectMax.Y - countSize.Y - 1f);
+
+            if (this.Settings.ShowResourceCountBackground)
+            {
+                var badgeHeight = MathF.Max(countSize.Y + 2f, 12f);
+                var badgeMin = new Vector2(rectMin.X, rectMax.Y - badgeHeight);
+                draw.AddRectFilled(badgeMin, rectMax, ImGuiHelper.Color(new Vector4(0f, 0f, 0f, 0.88f * alpha)), 2f);
+                textPos = new Vector2(
                     rectMin.X + (size - countSize.X) * 0.5f,
-                    badgeMin.Y + (badgeHeight - countSize.Y) * 0.5f),
+                    badgeMin.Y + (badgeHeight - countSize.Y) * 0.5f);
+            }
+            else
+            {
+                draw.AddText(textPos + Vector2.One, ImGuiHelper.Color(new Vector4(0f, 0f, 0f, 0.9f * alpha)), countLabel);
+            }
+
+            draw.AddText(
+                textPos,
                 ImGuiHelper.Color(new Vector4(textColor.X, textColor.Y, textColor.Z, alpha)),
                 countLabel);
         }
@@ -712,10 +761,23 @@ namespace PlayerBuffBar
             var textSize = ImGui.CalcTextSize(label);
             var badgeHeight = MathF.Max(textSize.Y + 2f, 12f);
             var badgeMin = new Vector2(rectMin.X, rectMax.Y - badgeHeight);
-            draw.AddRectFilled(badgeMin, rectMax, ImGuiHelper.Color(new Vector4(0f, 0f, 0f, 0.88f * alpha)), 2f);
-            var textPos = new Vector2(
-                rectMin.X + (rectMax.X - rectMin.X - textSize.X) * 0.5f,
-                badgeMin.Y + (badgeHeight - textSize.Y) * 0.5f);
+            var textPos = this.Settings.ShowResourceCountBackground
+                ? new Vector2(
+                    rectMin.X + (rectMax.X - rectMin.X - textSize.X) * 0.5f,
+                    badgeMin.Y + (badgeHeight - textSize.Y) * 0.5f)
+                : new Vector2(
+                    rectMin.X + (rectMax.X - rectMin.X - textSize.X) * 0.5f,
+                    rectMax.Y - textSize.Y - 1f);
+
+            if (this.Settings.ShowResourceCountBackground)
+            {
+                draw.AddRectFilled(badgeMin, rectMax, ImGuiHelper.Color(new Vector4(0f, 0f, 0f, 0.88f * alpha)), 2f);
+            }
+            else
+            {
+                draw.AddText(textPos + Vector2.One, ImGuiHelper.Color(new Vector4(0f, 0f, 0f, 0.9f * alpha)), label);
+            }
+
             draw.AddText(textPos, ImGuiHelper.Color(new Vector4(1f, 1f, 1f, alpha)), label);
         }
 
@@ -1015,6 +1077,44 @@ namespace PlayerBuffBar
                 this.Settings.Watchlist.Where(id => !BuffIconCatalog.IsReservedResourceWatchId(id)));
         }
 
+        private void ApplyWatchlistBufferIfNeeded()
+        {
+            if (!this.watchlistEditorDirty && !this.WatchlistBufferDiffersFromSettings())
+            {
+                return;
+            }
+
+            this.ApplyWatchlistBuffer();
+            this.watchlistEditorDirty = false;
+        }
+
+        private bool WatchlistBufferDiffersFromSettings()
+        {
+            var parsed = this.ParseWatchlistBuffer();
+            if (parsed.Count != this.Settings.Watchlist.Count)
+            {
+                return true;
+            }
+
+            for (var i = 0; i < parsed.Count; i++)
+            {
+                if (!string.Equals(parsed[i], this.Settings.Watchlist[i], StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private List<string> ParseWatchlistBuffer() => this.watchlistBuffer
+            .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => s.Trim())
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Where(s => !BuffIconCatalog.IsReservedResourceWatchId(s))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
         private void ApplyWatchlistBuffer()
         {
             if (!this.watchlistEditorDirty &&
@@ -1024,13 +1124,8 @@ namespace PlayerBuffBar
                 return;
             }
 
-            this.Settings.Watchlist = this.watchlistBuffer
-                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(s => s.Trim())
-                .Where(s => !string.IsNullOrWhiteSpace(s))
-                .Where(s => !BuffIconCatalog.IsReservedResourceWatchId(s))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            this.Settings.Watchlist = this.ParseWatchlistBuffer();
+            this.Settings.WatchlistUserConfigured = true;
         }
 
         private static int GetStat(Stats stats, GameStats stat)

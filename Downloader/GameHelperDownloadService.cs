@@ -51,7 +51,9 @@ namespace Downloader
 
               "MapKillCounter": { "Enable": true, "AutoStart": true },
 
-              "PlayerBuffBar": { "Enable": true, "AutoStart": true }
+              "PlayerBuffBar": { "Enable": true, "AutoStart": true },
+
+              "SimpleBars": { "Enable": false, "AutoStart": false }
 
             }
 

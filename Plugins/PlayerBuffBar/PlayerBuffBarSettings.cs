@@ -1,6 +1,8 @@
 namespace PlayerBuffBar
 {
+    using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Numerics;
     using GameHelper.Plugin;
 
@@ -13,7 +15,7 @@ namespace PlayerBuffBar
 
     public sealed class PlayerBuffBarSettings : IPSettings
     {
-        public int SettingsVersion = 4;
+        public int SettingsVersion = 5;
 
         public bool ShowOverlay = true;
 
@@ -30,6 +32,8 @@ namespace PlayerBuffBar
         public bool ShowRage = true;
 
         public bool HideEmptyResources = true;
+
+        public bool ShowResourceCountBackground = true;
 
         public bool ShowDurations = true;
 
@@ -88,7 +92,13 @@ namespace PlayerBuffBar
 
         public Vector2 FixedPosition = new(40f, 520f);
 
-        public List<string> Watchlist = new()
+        public bool WatchlistUserConfigured;
+
+        public List<string> Watchlist = new();
+
+        public static IReadOnlyList<string> CreateDefaultWatchlist() => DefaultWatchlist;
+
+        private static readonly string[] DefaultWatchlist =
         {
             "blood_rage",
             "fortify",
@@ -100,5 +110,33 @@ namespace PlayerBuffBar
             "haste",
             "herald",
         };
+
+        public static bool IsDefaultWatchlistPrefix(IReadOnlyList<string> watchlist)
+        {
+            if (watchlist.Count < DefaultWatchlist.Length)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < DefaultWatchlist.Length; i++)
+            {
+                if (!string.Equals(watchlist[i], DefaultWatchlist[i], StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public static List<string> StripDefaultWatchlistPrefix(IReadOnlyList<string> watchlist)
+        {
+            if (!IsDefaultWatchlistPrefix(watchlist))
+            {
+                return watchlist.ToList();
+            }
+
+            return watchlist.Skip(DefaultWatchlist.Length).ToList();
+        }
     }
 }

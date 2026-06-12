@@ -280,7 +280,8 @@ function Test-PluginDeploy {
         @{ Plugin = "AuraTracker"; Files = @("AuraTracker.dll") },
         @{ Plugin = "MapKillCounter"; Files = @("MapKillCounter.dll") },
         @{ Plugin = "AmanamuVoidAlert"; Files = @("AmanamuVoidAlert.dll") },
-        @{ Plugin = "PlayerBuffBar"; Files = @("PlayerBuffBar.dll") }
+        @{ Plugin = "PlayerBuffBar"; Files = @("PlayerBuffBar.dll") },
+        @{ Plugin = "SimpleBars"; Files = @("SimpleBars.dll", "Textures\full_bar.png", "Textures\hollow_bar.png") }
     )
 
     foreach ($entry in $required) {
@@ -349,6 +350,11 @@ function Repair-PluginsJson {
 
     if ($json.PSObject.Properties.Name -notcontains "PlayerBuffBar") {
         $json | Add-Member -NotePropertyName "PlayerBuffBar" -NotePropertyValue @{ Enable = $true; AutoStart = $true } -Force
+        $changed = $true
+    }
+
+    if ($json.PSObject.Properties.Name -notcontains "SimpleBars") {
+        $json | Add-Member -NotePropertyName "SimpleBars" -NotePropertyValue @{ Enable = $false; AutoStart = $false } -Force
         $changed = $true
     }
 
