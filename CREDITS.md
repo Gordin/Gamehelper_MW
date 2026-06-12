@@ -8,7 +8,6 @@ GameHelper is an **open-source fork** for Path of Exile 2, based on the [GameHel
 | **Pre-built releases** | https://github.com/MordWraith/Gamehelper/releases |
 | **Trust / auto-update** | [SECURITY.md](SECURITY.md) |
 
-**Maintainer:** Lafko / [MordWraith](https://github.com/MordWraith)
 
 If someone is missing from this list, please open an issue or contact the maintainer.
 
