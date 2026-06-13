@@ -120,6 +120,16 @@ namespace GameHelper.Settings
         public string FontCustomGlyphRange = string.Empty;
 
         /// <summary>
+        ///     Gets a value indicating whether to load the bundled Universal Font instead of the
+        ///     configured <see cref="FontPathName"/>. When enabled, a merged font (DejaVuSans +
+        ///     the configured font + GNU Unifont over the whole BMP) is loaded so text in any
+        ///     language renders across the whole overlay. Off by default (the full-BMP atlas is
+        ///     large to build); <see cref="FontPathName"/>/<see cref="FontSize"/>/<see cref="FontLanguage"/>
+        ///     still apply (the configured font is merged in as the priority for its language).
+        /// </summary>
+        public bool UniversalFont = false;
+
+        /// <summary>
         ///     Gets or sets hotKey to show/hide the main menu.
         /// </summary>
         public VK MainMenuHotKey = VK.F12;

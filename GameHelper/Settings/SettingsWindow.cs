@@ -514,6 +514,11 @@ namespace GameHelper.Settings
         {
             if (ImGui.CollapsingHeader("Change Fonts"))
             {
+                ImGui.Checkbox("Universal Font (render any language across the whole overlay)", ref Core.GHSettings.UniversalFont);
+                ImGuiHelper.ToolTip("Loads a bundled merged font (DejaVuSans + the font below + GNU Unifont over the whole " +
+                    "Unicode BMP) so text in any language renders everywhere. The font below is still merged in as the " +
+                    "priority for its language. Building the full atlas is heavier, so this is off by default.");
+
                 ImGui.InputText("Pathname", ref Core.GHSettings.FontPathName, 300);
                 ImGui.DragInt("Size", ref Core.GHSettings.FontSize, 0.1f, 13, 40);
                 var languageChanged = ImGuiHelper.EnumComboBox("Language", ref Core.GHSettings.FontLanguage);
@@ -534,20 +539,7 @@ namespace GameHelper.Settings
 
                 if (ImGui.Button("Apply Changes"))
                 {
-                    if (MiscHelper.TryConvertStringToImGuiGlyphRanges(Core.GHSettings.FontCustomGlyphRange, out var glyphranges))
-                    {
-                        Core.Overlay.ReplaceFont(
-                            Core.GHSettings.FontPathName,
-                            Core.GHSettings.FontSize,
-                            glyphranges);
-                    }
-                    else
-                    {
-                        Core.Overlay.ReplaceFont(
-                            Core.GHSettings.FontPathName,
-                            Core.GHSettings.FontSize,
-                            Core.GHSettings.FontLanguage);
-                    }
+                    UniversalFont.ApplyFromSettings();
                 }
             }
         }
