@@ -28,6 +28,8 @@ namespace AutoHotKeyTrigger.ProfileManager
         private int conditionToModify = -1;
         private int conditionIndexToSwap = -1;
         private bool expand;
+        private bool addNewConditionDialogOpen;
+        private bool modifyConditionDialogOpen;
         private ConditionType newConditionType = ConditionType.AILMENT;
         private readonly Stopwatch cooldownStopwatch = Stopwatch.StartNew();
 
@@ -276,20 +278,7 @@ namespace AutoHotKeyTrigger.ProfileManager
                     if (expand && ImGui.SmallButton(L("Edit Via Template", "Per Vorlage bearbeiten")))
                     {
                         this.conditionToModify = i;
-                        TemplateUi.PrepareConditionPopup();
-                        ImGui.OpenPopup("ModifyExistingConditionPopUp");
-                    }
-
-                    TemplateUi.PrepareConditionPopup();
-                    if (ImGui.BeginPopup("ModifyExistingConditionPopUp"))
-                    {
-                        ImGui.Text(L("NOTE: Click outside this popup to close it.", "HINWEIS: Ausserhalb klicken zum Schliessen."));
-                        ImGui.Text(L("NOTE: This Overwrites the whole condition.", "HINWEIS: Ueberschreibt die gesamte Bedingung."));
-                        ImGui.SetNextItemWidth(TemplateUi.FieldWidth());
-                        ImGuiHelper.EnumComboBox(L("Condition Type", "Bedingungstyp"), ref this.newConditionType);
-                        ImGui.Separator();
-                        this.ModifyExistingCondition(this.newConditionType, this.conditionToModify);
-                        ImGui.EndPopup();
+                        this.modifyConditionDialogOpen = true;
                     }
 
                     ImGui.BeginGroup();
@@ -339,8 +328,7 @@ namespace AutoHotKeyTrigger.ProfileManager
         {
             if (ImGui.Button(L("Add New Condition", "Neue Bedingung")))
             {
-                TemplateUi.PrepareConditionPopup();
-                ImGui.OpenPopup("AddNewConditionPopUp");
+                this.addNewConditionDialogOpen = true;
             }
 
             ImGui.SameLine();
@@ -375,15 +363,61 @@ namespace AutoHotKeyTrigger.ProfileManager
                 this.conditions.AddRange(newConditions);
             }
 
-            TemplateUi.PrepareConditionPopup();
-            if (ImGui.BeginPopup("AddNewConditionPopUp"))
+            this.DrawAddNewConditionDialog();
+            this.DrawModifyConditionDialog();
+        }
+
+        private void DrawAddNewConditionDialog()
+        {
+            if (!this.addNewConditionDialogOpen)
             {
-                ImGui.Text(L("NOTE: Click outside this popup to close it.", "HINWEIS: Ausserhalb klicken zum Schliessen."));
+                return;
+            }
+
+            TemplateUi.PrepareConditionDialog();
+            if (ImGui.Begin(
+                    $"{L("Add New Condition", "Neue Bedingung")}###AddNewConditionPopUp",
+                    ref this.addNewConditionDialogOpen,
+                    ImGuiWindowFlags.NoCollapse))
+            {
+                ImGui.TextDisabled(L(
+                    "Drag the corner to resize. Close with X when done.",
+                    "Ecke ziehen zum Vergroessern. Mit X schliessen."));
+                ImGui.TextDisabled(L("Condition Type", "Bedingungstyp"));
                 ImGui.SetNextItemWidth(TemplateUi.FieldWidth());
-                ImGuiHelper.EnumComboBox(L("Condition Type", "Bedingungstyp"), ref this.newConditionType);
+                ImGuiHelper.EnumComboBox("##ConditionType", ref this.newConditionType);
                 ImGui.Separator();
                 this.Add(this.newConditionType);
-                ImGui.EndPopup();
+                ImGui.End();
+            }
+        }
+
+        private void DrawModifyConditionDialog()
+        {
+            if (!this.modifyConditionDialogOpen)
+            {
+                return;
+            }
+
+            TemplateUi.PrepareConditionDialog();
+            if (ImGui.Begin(
+                    $"{L("Edit Condition", "Bedingung bearbeiten")}###ModifyExistingConditionPopUp",
+                    ref this.modifyConditionDialogOpen,
+                    ImGuiWindowFlags.NoCollapse))
+            {
+                ImGui.TextDisabled(L(
+                    "This overwrites the whole condition. Drag the corner to resize.",
+                    "Ueberschreibt die gesamte Bedingung. Ecke ziehen zum Vergroessern."));
+                ImGui.TextDisabled(L("Condition Type", "Bedingungstyp"));
+                ImGui.SetNextItemWidth(TemplateUi.FieldWidth());
+                ImGuiHelper.EnumComboBox("##ConditionType", ref this.newConditionType);
+                ImGui.Separator();
+                if (this.conditionToModify >= 0 && this.conditionToModify < this.conditions.Count)
+                {
+                    this.ModifyExistingCondition(this.newConditionType, this.conditionToModify);
+                }
+
+                ImGui.End();
             }
         }
 

@@ -39,27 +39,38 @@ namespace AutoHotKeyTrigger.ProfileManager.Templates
         public static string Add()
         {
             ImGui.Checkbox("Enable friendly monster condition##friendly_nearby_monster_template", ref friendly);
+            ImGui.Spacing();
+
+            var countWidth = Math.Max(88f, ImGui.GetFontSize() * 7f);
+            var operatorWidth = ImGui.GetFontSize() * 4.5f;
+            var fieldWidth = TemplateUi.FieldWidth(0.7f);
+
+            ImGui.AlignTextToFramePadding();
             ImGui.Text("Player has");
             ImGui.SameLine();
-            ImGui.SetNextItemWidth(ImGui.GetFontSize() * 3);
+            ImGui.SetNextItemWidth(operatorWidth);
             ImGuiHelper.IEnumerableComboBox("##NearbyMonsterOperator", SupportedOperatorTypes, ref selectedOperator);
             ImGui.SameLine();
-            ImGui.SetNextItemWidth(ImGui.GetFontSize() * 5);
-            ImGui.InputInt(friendly ? "friendly monsters" : "monsters", ref counter);
+            ImGui.SetNextItemWidth(countWidth);
+            ImGui.InputInt("##NearbyMonsterCount", ref counter, 1, 5);
+            ImGui.SameLine();
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text(friendly ? "friendly monsters" : "monsters");
+
             if (!friendly)
             {
+                ImGui.AlignTextToFramePadding();
+                ImGui.Text("Rarity");
                 ImGui.SameLine();
-                ImGui.Text("near them of");
-                ImGui.SameLine();
-                ImGui.SetNextItemWidth(ImGui.GetFontSize() * 10);
-                if (ImGui.BeginCombo($"rarity##nearby_monster_template", $"{selectedRarity}"))
+                ImGui.SetNextItemWidth(fieldWidth);
+                if (ImGui.BeginCombo("##nearby_monster_rarity", $"{selectedRarity}"))
                 {
                     foreach (var rarity in Enum.GetValues<MonsterRarity>())
                     {
-                        var IsSelected = selectedRarity.HasFlag(rarity);
-                        if (ImGui.Checkbox($"{rarity}", ref IsSelected))
+                        var isSelected = selectedRarity.HasFlag(rarity);
+                        if (ImGui.Checkbox($"{rarity}", ref isSelected))
                         {
-                            if (IsSelected)
+                            if (isSelected)
                             {
                                 selectedRarity |= rarity;
                             }
@@ -74,19 +85,20 @@ namespace AutoHotKeyTrigger.ProfileManager.Templates
                 }
             }
 
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text("Zone");
             ImGui.SameLine();
-            ImGui.Text("in");
-            ImGui.SameLine();
-            ImGui.SetNextItemWidth(ImGui.GetFontSize() * 8);
-            ImGuiHelper.EnumComboBox(".##NearbyZoneSelector", ref zones);
+            ImGui.SetNextItemWidth(fieldWidth);
+            ImGuiHelper.EnumComboBox("##NearbyZoneSelector", ref zones);
 
-            if (ImGui.Button("Add##NearbyMonsterAdd"))
+            if (TemplateUi.AddButton("##NearbyMonsterAdd"))
             {
                 if (friendly)
                 {
                     return $"{zones}FriendlyMonsterCount {selectedOperator} {counter}";
                 }
-                else if (selectedRarity != 0)
+
+                if (selectedRarity != 0)
                 {
                     return $"MonsterCount(MonsterRarity.{selectedRarity}: MonsterNearbyZones.{zones}) {selectedOperator} {counter}".
                         Replace(", ", "|MonsterRarity.").

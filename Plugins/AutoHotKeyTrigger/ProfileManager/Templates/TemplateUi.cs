@@ -5,31 +5,34 @@ namespace AutoHotKeyTrigger.ProfileManager.Templates
     using ImGuiNET;
 
     /// <summary>
-    ///     Shared layout helpers for condition template popups.
+    ///     Shared layout helpers for condition template dialogs.
     /// </summary>
     internal static class TemplateUi
     {
-        /// <summary>Fixed popup width so dialogs do not stretch across the whole overlay.</summary>
-        internal const float PopupWidth = 420f;
+        internal const float PopupMinWidth = 360f;
+        internal const float PopupDefaultWidth = 520f;
+        internal const float PopupDefaultHeight = 300f;
 
-        internal static void PrepareConditionPopup()
+        internal static void PrepareConditionDialog()
         {
-            ImGui.SetNextWindowSize(new Vector2(PopupWidth, 0), ImGuiCond.Always);
+            ImGui.SetNextWindowSize(
+                new Vector2(PopupDefaultWidth, PopupDefaultHeight),
+                ImGuiCond.FirstUseEver);
             ImGui.SetNextWindowSizeConstraints(
-                new Vector2(PopupWidth, 0),
-                new Vector2(PopupWidth, 600));
+                new Vector2(PopupMinWidth, 160f),
+                new Vector2(900f, 700f));
         }
 
         internal static float ContentWidth()
         {
-            var padding = ImGui.GetStyle().WindowPadding.X * 2f;
             var avail = ImGui.GetContentRegionAvail().X;
             if (avail > 1f)
             {
-                return Math.Min(avail, PopupWidth - padding);
+                return avail;
             }
 
-            return PopupWidth - padding;
+            var padding = ImGui.GetStyle().WindowPadding.X * 2f;
+            return PopupDefaultWidth - padding;
         }
 
         internal static float FieldWidth(float fraction = 1f)
