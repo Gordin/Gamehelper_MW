@@ -25,6 +25,8 @@ namespace Hiveblood
         private bool pendingTrackerSave;
 
         private string lastStatus = string.Empty;
+        private Vector2 lastInventoryOverlayPosition;
+        private bool hasLastInventoryOverlayPosition;
 
         private string SettingsPath => Path.Join(this.DllDirectory, "config", "settings.txt");
 
@@ -108,6 +110,9 @@ namespace Hiveblood
             ImGui.ColorEdit4(L("Text color", "Textfarbe"), ref this.Settings.TextColor);
             ImGui.Checkbox(L("Warn near cap (100,000)", "Warnung nahe Cap (100.000)"), ref this.Settings.WarnNearCap);
             ImGui.SliderInt(L("Warn from amount", "Warnung ab Betrag"), ref this.Settings.WarnThreshold, 80_000, 100_000);
+            ImGuiHelper.ToolTip(L(
+                "Above the threshold the overlay text turns orange-red and blinks. It is also shown while the inventory is closed (at the last in-inventory position).",
+                "Ueber dem Schwellenwert wird der Text orange-rot und blinkt. Auch bei geschlossenem Inventar sichtbar (letzte Position am Inventar)."));
             ImGui.Checkbox(L("Show gains since last tree sync", "Gewinn seit letztem Tree-Sync"), ref this.Settings.ShowSessionGains);
             ImGui.Checkbox(L("Debug status line", "Debug-Statuszeile"), ref this.Settings.DebugStatusLine);
 
@@ -155,7 +160,8 @@ namespace Hiveblood
             this.UpdateTracker(gameUi.Address);
             this.FlushPendingTrackerSave();
 
-            if (this.Settings.ShowOnlyWithInventory && !inventoryOpen && !this.Settings.ShowAlways)
+            var nearCap = this.IsCapWarningActive();
+            if (this.Settings.ShowOnlyWithInventory && !inventoryOpen && !this.Settings.ShowAlways && !nearCap)
             {
                 return;
             }
@@ -259,10 +265,24 @@ namespace Hiveblood
 
             if (this.Settings.ShowOnlyWithInventory && !inventoryOpen && !this.Settings.ShowAlways)
             {
-                return false;
+                if (!this.IsCapWarningActive())
+                {
+                    return false;
+                }
             }
 
             return true;
+        }
+
+        private bool IsCapWarningActive() =>
+            this.Settings.WarnNearCap &&
+            this.Settings.HasSyncedOnce &&
+            this.Settings.EstimatedAmount >= this.Settings.WarnThreshold;
+
+        private static float CapWarningBlinkAlpha()
+        {
+            // ~500 ms on / 500 ms dimmer
+            return (Environment.TickCount / 500) % 2 == 0 ? 1f : 0.4f;
         }
 
         private void DrawOverlay(UiElementBase rightPanel, bool inventoryOpen)
@@ -292,10 +312,10 @@ namespace Hiveblood
             var pos = this.ResolveOverlayPosition(rightPanel, inventoryOpen);
 
             var color = this.Settings.TextColor;
-            if (this.Settings.WarnNearCap &&
-                this.Settings.EstimatedAmount >= this.Settings.WarnThreshold)
+            if (this.IsCapWarningActive())
             {
                 color = new Vector4(1f, 0.45f, 0.35f, 1f);
+                color.W *= CapWarningBlinkAlpha();
             }
 
             var textColor = ImGui.ColorConvertFloat4ToU32(color);
@@ -363,8 +383,18 @@ namespace Hiveblood
 
         private Vector2 ResolveOverlayPosition(UiElementBase rightPanel, bool inventoryOpen)
         {
-            if (this.Settings.OverlayAnchor == HivebloodOverlayAnchor.CustomScreen || !inventoryOpen)
+            if (this.Settings.OverlayAnchor == HivebloodOverlayAnchor.CustomScreen)
             {
+                return this.Settings.OverlayScreenPosition + this.Settings.OverlayOffset;
+            }
+
+            if (!inventoryOpen)
+            {
+                if (this.hasLastInventoryOverlayPosition)
+                {
+                    return this.lastInventoryOverlayPosition;
+                }
+
                 return this.Settings.OverlayScreenPosition + this.Settings.OverlayOffset;
             }
 
@@ -376,7 +406,10 @@ namespace Hiveblood
                 _ => panelPos,
             };
 
-            return basePos + this.Settings.OverlayOffset;
+            var pos = basePos + this.Settings.OverlayOffset;
+            this.lastInventoryOverlayPosition = pos;
+            this.hasLastInventoryOverlayPosition = true;
+            return pos;
         }
 
         private static string L(string english, string german) => OverlayLocalization.L(english, german);
