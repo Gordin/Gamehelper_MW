@@ -55,6 +55,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		NuGet.config = NuGet.config
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LootValue", "Plugins\LootValue\LootValue.csproj", "{3D5A34DB-2B68-4D36-8015-B1D00A8AB398}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -141,6 +143,10 @@ Global
 		{C1D2E3F4-A5B6-4789-C012-3456789ABCDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C1D2E3F4-A5B6-4789-C012-3456789ABCDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C1D2E3F4-A5B6-4789-C012-3456789ABCDE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D5A34DB-2B68-4D36-8015-B1D00A8AB398}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D5A34DB-2B68-4D36-8015-B1D00A8AB398}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D5A34DB-2B68-4D36-8015-B1D00A8AB398}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D5A34DB-2B68-4D36-8015-B1D00A8AB398}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -162,6 +168,7 @@ Global
 		{C9D0E1F2-A3B4-4567-C890-123456789012} = {9FA3D6BD-1EC1-3BA5-80CB-CE02773A58D5}
 		{D0E1F2A3-B4C5-4678-D901-234567890123} = {9FA3D6BD-1EC1-3BA5-80CB-CE02773A58D5}
 		{C1D2E3F4-A5B6-4789-C012-3456789ABCDE} = {9FA3D6BD-1EC1-3BA5-80CB-CE02773A58D5}
+		{3D5A34DB-2B68-4D36-8015-B1D00A8AB398} = {9FA3D6BD-1EC1-3BA5-80CB-CE02773A58D5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6CB26318-014D-4959-8116-07FD055D941A}
